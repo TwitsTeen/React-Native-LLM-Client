@@ -97,17 +97,22 @@ export const editConversationTitle = async (
   }
 };
 
-export const saveApiKey = async (key: string): Promise<void> => {
+export const saveApiKey = async (
+  key: string,
+  type: "Google" | "Mistral"
+): Promise<void> => {
   try {
-    await AsyncStorage.setItem("apiKey", key);
+    await AsyncStorage.setItem(type, key);
   } catch (e) {
     new Error("Failed to save API key : " + e);
   }
 };
 
-export const getApiKey = async (): Promise<string | null> => {
+export const getApiKey = async (
+  type: "Google" | "Mistral"
+): Promise<string | null> => {
   try {
-    const apiKey = await AsyncStorage.getItem("apiKey");
+    const apiKey = await AsyncStorage.getItem(type);
 
     return apiKey;
   } catch (e) {

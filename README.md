@@ -1,13 +1,15 @@
 # What is this app ?
 
-This app is a React Native application that serves as a client for Google's AI Gemini.
+This app is a React Native application that serves as a client for differents LLM.
 
 ## Features
 
-- Connect to Google AI services.
+- Access to Gemini
+- Access to Mistral
+- Hot switch between AI models
+- Multiple conversations
 - User-friendly interface built with React Native.
 - Cross-platform support (iOS/Android and Web).
-- Multiple conversations
 
 ## Usage
 

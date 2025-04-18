@@ -1,14 +1,22 @@
 import ChatBubble from "@/components/ChatBubble";
-import { askApi } from "@/services/api";
+import { askGoogle, askMistral } from "@/services/api";
 import { getConversationById } from "@/services/localStorage";
 import { Conversation, Message } from "@/types";
 import { useLocalSearchParams } from "expo-router";
 import React, { useEffect, useState } from "react";
-import { View, Text, FlatList, ActivityIndicator } from "react-native";
+import {
+  View,
+  Text,
+  FlatList,
+  ActivityIndicator,
+  useColorScheme,
+} from "react-native";
 import { TextInput } from "react-native-gesture-handler";
 import { saveConversation as saveConversationLocalStorage } from "@/services/localStorage";
-import { useNavigation } from "@react-navigation/native"; // ✅ add this
-import { useLayoutEffect } from "react"; // ✅ add this
+import { useNavigation } from "@react-navigation/native";
+import { useLayoutEffect } from "react";
+import { Picker } from "@react-native-picker/picker";
+import { ContentChunk } from "@mistralai/mistralai/models/components";
 
 function ChatScreen() {
   const { id } = useLocalSearchParams();
@@ -16,6 +24,14 @@ function ChatScreen() {
   const [newMessage, setNewMessage] = useState("");
   const [messages, setMessages] = useState<Message[]>([]);
   const [loading, setLoading] = useState(false);
+  const [selectedModel, setSelectedModel] = useState("mistral");
+  const colorScheme = useColorScheme();
+  const isDarkMode = colorScheme === "dark";
+
+  const modelOptions = [
+    { label: "Mistral", value: "mistral" },
+    { label: "Google", value: "google" },
+  ];
 
   useEffect(() => {
     const fetchConversation = async () => {
@@ -72,10 +88,15 @@ function ChatScreen() {
 
   const sendToServer = async (message: Message) => {
     setLoading(true);
-    const response = await askApi(message.text, conversation!);
+    let response: string | ContentChunk[] | null | undefined = "";
+    if (selectedModel === "google") {
+      response = await askGoogle(message.text, conversation!);
+    } else if (selectedModel === "mistral") {
+      response = await askMistral(message.text, conversation!);
+    }
     const receivedMessage: Message = {
       id: Date.now().toString(),
-      text: response!,
+      text: Array.isArray(response) ? response.join("") : response ?? "",
       isSender: false,
       timestamp: new Date(),
     };
@@ -103,6 +124,26 @@ function ChatScreen() {
 
   return (
     <View className="flex-1 dark:bg-dark-primary light:bg-light-primary bg-white">
+      <Picker
+        selectedValue={selectedModel}
+        onValueChange={(itemValue, itemIndex) => setSelectedModel(itemValue)}
+        style={{
+          height: 50,
+          width: 150,
+          margin: 10,
+          borderRadius: 10,
+          padding: 10,
+          backgroundColor: isDarkMode ? "#D6D6B1" : "#E5E5CD",
+        }}
+      >
+        {modelOptions.map((option) => (
+          <Picker.Item
+            key={option.value}
+            label={option.label}
+            value={option.value}
+          />
+        ))}
+      </Picker>
       <FlatList
         data={messages}
         renderItem={({ item }) => <ChatBubble message={item} />}
