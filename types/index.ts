@@ -11,3 +11,9 @@ export interface Conversation {
   title: string;
   createdAt: Date;
 }
+
+export interface Model {
+  name: string;
+  displayName: string;
+  description: string;
+}

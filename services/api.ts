@@ -2,12 +2,6 @@ import { Conversation } from "@/types";
 import { Content, GoogleGenAI } from "@google/genai";
 import { getApiKey } from "./localStorage";
 import { Mistral } from "@mistralai/mistralai";
-import {
-  AssistantMessage,
-  UserMessage,
-} from "@mistralai/mistralai/models/components";
-
-const model = "gemini-2.0-flash";
 
 const convertConversationToHistory = (conversation: Conversation) => {
   const history: Content[] = [];
@@ -21,7 +15,8 @@ const convertConversationToHistory = (conversation: Conversation) => {
 
 export const askGoogle = async (
   question: string,
-  conversation: Conversation
+  conversation: Conversation,
+  model: string = "gemini-2.0-flash"
 ) => {
   const apiKey = await getApiKey("Google");
   if (!apiKey) {
@@ -56,6 +51,30 @@ export const askGoogle = async (
   }
 };
 
+export const listGoogleModels = async () => {
+  const apiKey = await getApiKey("Google");
+  const response = await fetch(
+    `https://generativelanguage.googleapis.com/v1beta/models?key=${apiKey}`,
+    {
+      method: "GET",
+      headers: {
+        "Content-Type": "application/json",
+      },
+    }
+  );
+  if (!response.ok) {
+    console.error("Error fetching models:", response);
+    return [];
+  }
+  const data = await response.json();
+  const models = data.models.map((model: any) => ({
+    name: model.name,
+    displayName: model.displayName,
+    description: model.description,
+  }));
+  return models;
+};
+
 const convertMistralConversationToHistory = (conversation: Conversation) => {
   let role: "system" | "user" | "assistant" | "tool";
   const messages = conversation.messages.map((message) => {
@@ -78,7 +97,8 @@ const convertMistralConversationToHistory = (conversation: Conversation) => {
 
 export const askMistral = async (
   question: string,
-  conversation: Conversation
+  conversation: Conversation,
+  model: string = "mistral-small-latest"
 ) => {
   const apiKey = await getApiKey("Mistral");
   if (!apiKey) {
@@ -101,7 +121,7 @@ export const askMistral = async (
 
   try {
     const response = await mistral.chat.complete({
-      model: "mistral-small-latest",
+      model: model,
       messages: chatHistory,
     });
 
@@ -115,4 +135,26 @@ export const askMistral = async (
     console.error("Error calling Mistral API:", e);
     return "Sorry, I encountered an error trying to respond." + e;
   }
+};
+
+// Mistral does not seem to have a public API for listing models
+// so we will hardcode the models for now
+export const listMistralModels = async () => {
+  return [
+    {
+      name: "mistral-small-latest",
+      displayName: "Mistral Small",
+      description: "",
+    },
+    {
+      name: "open-mistral-nemo",
+      displayName: "Mistral Nemo",
+      description: "",
+    },
+    {
+      name: "open-codestral-mamba",
+      displayName: "Codestral Mamba",
+      description: "",
+    },
+  ];
 };

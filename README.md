@@ -6,7 +6,7 @@ This app is a React Native application that serves as a client for differents LL
 
 - Access to Gemini
 - Access to Mistral
-- Hot switch between AI models
+- Hot switch between AI models and Providers
 - Multiple conversations
 - User-friendly interface built with React Native.
 - Cross-platform support (iOS/Android and Web).
@@ -19,7 +19,7 @@ This app is a React Native application that serves as a client for differents LL
 ## Technologies Used
 
 - **React Native & Expo**: For building the mobile application.
-- **Google AI API**: For AI-powered functionalities.
+- **Google AI API** & **Mistral La Plateforme** : For AI-powered functionalities.
 
 ## Contributing
 

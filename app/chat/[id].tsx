@@ -1,7 +1,12 @@
 import ChatBubble from "@/components/ChatBubble";
-import { askGoogle, askMistral } from "@/services/api";
+import {
+  askGoogle,
+  askMistral,
+  listGoogleModels,
+  listMistralModels,
+} from "@/services/api";
 import { getConversationById } from "@/services/localStorage";
-import { Conversation, Message } from "@/types";
+import { Conversation, Message, Model } from "@/types";
 import { useLocalSearchParams } from "expo-router";
 import React, { useEffect, useState } from "react";
 import {
@@ -24,14 +29,24 @@ function ChatScreen() {
   const [newMessage, setNewMessage] = useState("");
   const [messages, setMessages] = useState<Message[]>([]);
   const [loading, setLoading] = useState(false);
-  const [selectedModel, setSelectedModel] = useState("mistral");
+  const [selectedProvider, setSelectedProvider] = useState("mistral");
+  const [selectedModel, setSelectedModel] = useState("");
   const colorScheme = useColorScheme();
   const isDarkMode = colorScheme === "dark";
+  const providerOptions = ["mistral", "google"];
+  const [modelOptions, setModelOptions] = useState<Record<string, Model[]>>({
+    google: [],
+    mistral: [],
+  });
 
-  const modelOptions = [
-    { label: "Mistral", value: "mistral" },
-    { label: "Google", value: "google" },
-  ];
+  useEffect(() => {
+    const defaultModel: Record<string, string> = {
+      google: "models/gemini-2.0-flash",
+      mistral: "mistral-small-latest",
+    };
+
+    setSelectedModel(defaultModel[selectedProvider]);
+  }, [selectedProvider, modelOptions]);
 
   useEffect(() => {
     const fetchConversation = async () => {
@@ -43,8 +58,18 @@ function ChatScreen() {
       }
       setMessages(conv.messages);
     };
+    const fetchModels = async () => {
+      const googleModels = await listGoogleModels();
+      const mistralModels = await listMistralModels();
+      setModelOptions({
+        google: googleModels,
+        mistral: mistralModels,
+      });
+      console.log("Google Models:", googleModels);
+    };
 
     fetchConversation();
+    fetchModels();
   }, [id]);
 
   useEffect(() => {
@@ -89,10 +114,10 @@ function ChatScreen() {
   const sendToServer = async (message: Message) => {
     setLoading(true);
     let response: string | ContentChunk[] | null | undefined = "";
-    if (selectedModel === "google") {
-      response = await askGoogle(message.text, conversation!);
-    } else if (selectedModel === "mistral") {
-      response = await askMistral(message.text, conversation!);
+    if (selectedProvider === "google") {
+      response = await askGoogle(message.text, conversation!, selectedModel);
+    } else if (selectedProvider === "mistral") {
+      response = await askMistral(message.text, conversation!, selectedModel);
     }
     const receivedMessage: Message = {
       id: Date.now().toString(),
@@ -125,8 +150,8 @@ function ChatScreen() {
   return (
     <View className="flex-1 dark:bg-dark-primary light:bg-light-primary bg-white">
       <Picker
-        selectedValue={selectedModel}
-        onValueChange={(itemValue, itemIndex) => setSelectedModel(itemValue)}
+        selectedValue={selectedProvider}
+        onValueChange={(itemValue, itemIndex) => setSelectedProvider(itemValue)}
         style={{
           height: 50,
           width: 150,
@@ -136,11 +161,29 @@ function ChatScreen() {
           backgroundColor: isDarkMode ? "#D6D6B1" : "#E5E5CD",
         }}
       >
-        {modelOptions.map((option) => (
+        {providerOptions.map((option) => (
+          <Picker.Item key={option} label={option} value={option} />
+        ))}
+      </Picker>
+      <Picker
+        selectedValue={selectedModel}
+        onValueChange={(itemValue, itemIndex) => {
+          setSelectedModel(itemValue);
+        }}
+        style={{
+          height: 50,
+          width: 150,
+          margin: 10,
+          borderRadius: 10,
+          padding: 10,
+          backgroundColor: isDarkMode ? "#D6D6B1" : "#E5E5CD",
+        }}
+      >
+        {modelOptions[selectedProvider].map((model) => (
           <Picker.Item
-            key={option.value}
-            label={option.label}
-            value={option.value}
+            key={model.name}
+            label={model.displayName}
+            value={model.name}
           />
         ))}
       </Picker>
